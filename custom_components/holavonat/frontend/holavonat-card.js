@@ -292,8 +292,9 @@ const STYLE = `
 `;
 
 // The card module is loaded before the frontend app, and the app then installs a
-// scoped custom element registry that drops earlier definitions. Define again
-// once the app has registered its main element, if the definition is gone.
+// scoped custom element registry that drops earlier definitions. The load order
+// differs between browsers and the companion apps, so keep checking during
+// startup and define again whenever the definition is gone.
 function defineCard() {
   if (!window.customElements.get("holavonat-card")) {
     window.customElements.define("holavonat-card", class extends HolavonatCard {});
@@ -301,12 +302,10 @@ function defineCard() {
 }
 defineCard();
 const started = Date.now();
-const waitForApp = setInterval(() => {
-  if (window.customElements.get("home-assistant") || Date.now() - started > 60000) {
-    clearInterval(waitForApp);
-    defineCard();
-  }
-}, 250);
+const keepDefined = setInterval(() => {
+  defineCard();
+  if (Date.now() - started > 120000) clearInterval(keepDefined);
+}, 500);
 
 window.customCards = window.customCards || [];
 window.customCards.push({
