@@ -11,6 +11,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import slugify
 
 from . import HolavonatConfigEntry
 from .const import (
@@ -78,6 +79,9 @@ class HolavonatDepartureSensor(CoordinatorEntity[RouteCoordinator], SensorEntity
         self._direction = direction
         self._position = position
         self._attr_name = f"{origin} → {destination} {position + 1}."
+        # Common prefix, so one glob can exclude all departures from the logbook.
+        # Only used for new entities, existing ones keep their registry entity_id.
+        self.entity_id = f"sensor.{slugify(f'{DOMAIN} {origin} {destination} {position + 1}')}"
         # Always present, so the dashboard card can group sensors without a departure.
         self._static_attributes = {
             "origin": origin,

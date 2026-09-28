@@ -72,8 +72,8 @@ A link vagy a jelszó később az integráció menüjében az **Újrakonfigurál
 
 | Név | Entitás | Jelentés |
 |---|---|---|
-| Szeged → Budapest-Nyugati 1. … 3. | `sensor.szeged_budapest_nyugati_1` … `_3` | A következő 3 vonat várható indulása Szegedről |
-| Budapest-Nyugati → Szeged 1. … 3. | `sensor.budapest_nyugati_szeged_1` … `_3` | A következő 3 vonat várható indulása a Nyugatiból |
+| Szeged → Budapest-Nyugati 1. … 3. | `sensor.holavonat_szeged_budapest_nyugati_1` … `_3` | A következő 3 vonat várható indulása Szegedről |
+| Budapest-Nyugati → Szeged 1. … 3. | `sensor.holavonat_budapest_nyugati_szeged_1` … `_3` | A következő 3 vonat várható indulása a Nyugatiból |
 
 Az állapot a **várható** indulás: menetrend + késés, ha ismert. Attribútumok:
 
@@ -87,6 +87,7 @@ expected_departure: "2026-09-24T16:44:00+02:00"
 delay_min: 0            # null, ha nincs valós idejű adat
 scheduled_arrival: "2026-09-24T19:16:00+02:00"
 expected_arrival: "2026-09-24T19:16:00+02:00"
+arrival_delay_min: 0    # késés érkezéskor; null, ha nincs valós idejű adat
 platform: "6"           # null, ha nincs valós idejű adat
 current_stop: Vác       # hol jár most a vonat
 realtime: true
@@ -119,7 +120,8 @@ A kártyán látható:
 
 - a várható indulás, késésnél narancssárgával és alatta áthúzva a menetrend szerinti idő,
 - a visszaszámlálás (10 percen belül kiemelve),
-- a vonat neve, a vágány, az érkezés és hogy hol jár most a vonat,
+- a vonat neve, a vágány és hogy hol jár most a vonat,
+- az érkezés: menetrend szerinti idő, és ha van élő adat, a valós (várható) érkezés színkóddal,
 - a késés színkóddal: zöld pontos, narancs késik, piros 10 percnél többet késik, szürke menetrend szerinti (még nincs élő adat),
 - a pótlóbusz jelölése.
 
@@ -133,19 +135,43 @@ Ha nem a saját kártyát használod:
 type: entities
 title: Szeged ⇄ Budapest-Nyugati
 entities:
-  - entity: sensor.szeged_budapest_nyugati_1
+  - entity: sensor.holavonat_szeged_budapest_nyugati_1
     format: time
-  - entity: sensor.szeged_budapest_nyugati_2
+  - entity: sensor.holavonat_szeged_budapest_nyugati_2
     format: time
-  - entity: sensor.szeged_budapest_nyugati_3
+  - entity: sensor.holavonat_szeged_budapest_nyugati_3
     format: time
-  - entity: sensor.budapest_nyugati_szeged_1
+  - entity: sensor.holavonat_budapest_nyugati_szeged_1
     format: time
-  - entity: sensor.budapest_nyugati_szeged_2
+  - entity: sensor.holavonat_budapest_nyugati_szeged_2
     format: time
-  - entity: sensor.budapest_nyugati_szeged_3
+  - entity: sensor.holavonat_budapest_nyugati_szeged_3
     format: time
 ```
+
+## Napló és előzmények
+
+Minden új vonat egy bejegyzést hozna létre a Home Assistant **Naplójában**. Ezt integrációból nem lehet kikapcsolni, a `configuration.yaml`-ban kell kizárni. A szenzorok azonosítója `sensor.holavonat_` kezdetű, így egy sor elég az összes útvonalhoz:
+
+```yaml
+logbook:
+  exclude:
+    entity_globs:
+      - sensor.holavonat_*
+```
+
+Ha az előzményekben és az adatbázisban sem kellenek a korábbi vonatok, a `recorder` alól zárd ki ugyanígy. Ez a Naplóból is kiveszi őket:
+
+```yaml
+recorder:
+  exclude:
+    entity_globs:
+      - sensor.holavonat_*
+```
+
+A kártya és az automatizálások a kizárás után is működnek, mert az aktuális állapotot használják. Módosítás után a Home Assistantot újra kell indítani.
+
+A `sensor.holavonat_` előtag a 0.5.0 verziótól felvett útvonalakra érvényes. A korábban felvett útvonal szenzorai megtartják a régi azonosítót. Az útvonal törlése és újrafelvétele után azok is az új azonosítót kapják.
 
 ## Hibakeresés
 

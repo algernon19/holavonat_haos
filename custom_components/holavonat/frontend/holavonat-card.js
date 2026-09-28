@@ -17,7 +17,9 @@ const STRINGS = {
     minShort: "p",
     platform: "vágány",
     at: "Most",
-    arrives: "érk.",
+    arrives: "Érkezés",
+    scheduledShort: "menetrend",
+    actualShort: "valós",
     none: "Nincs több közvetlen vonat a következő héten.",
     noRoutes: "Nincs beállított Holavonat útvonal.",
     bus: "Pótlóbusz",
@@ -33,7 +35,9 @@ const STRINGS = {
     minShort: "m",
     platform: "platform",
     at: "Now",
-    arrives: "arr.",
+    arrives: "Arrival",
+    scheduledShort: "scheduled",
+    actualShort: "actual",
     none: "No more direct trains in the next week.",
     noRoutes: "No Holavonat route configured.",
     bus: "Replacement bus",
@@ -161,7 +165,7 @@ class HolavonatCard extends HTMLElement {
         </div>
         <div class="info">
           <div class="meta">${meta}</div>
-          <div class="sub">${t.arrives} ${this._time(train.expected_arrival)} · ${esc(train.destination)}</div>
+          ${this._arrival(train)}
           ${where}
         </div>
         <div class="right">
@@ -169,6 +173,18 @@ class HolavonatCard extends HTMLElement {
           ${this._delayBadge(train)}
         </div>
       </div>`;
+  }
+
+  _arrival(train) {
+    const t = this._t;
+    const scheduled = this._time(train.scheduled_arrival);
+    let actual = "";
+    if (train.realtime && train.arrival_delay_min != null) {
+      const d = train.arrival_delay_min;
+      const cls = d >= 10 ? "bad" : d > 0 ? "late" : "ok";
+      actual = ` · ${t.actualShort} <b class="arr ${cls}">${this._time(train.expected_arrival)}</b>`;
+    }
+    return `<div class="sub arrival">${t.arrives}: ${t.scheduledShort} <b>${scheduled}</b>${actual}</div>`;
   }
 
   _direction(dir) {
@@ -257,6 +273,11 @@ const STYLE = `
   .chip svg { width: 14px; height: 14px; color: var(--hv-accent); }
   .chip.bus { background: color-mix(in srgb, var(--hv-warn) 20%, transparent); }
   .sub, .where { font-size: .8rem; color: var(--hv-muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sub.arrival { white-space: normal; }
+  .sub b { font-weight: 600; color: var(--primary-text-color); font-variant-numeric: tabular-nums; }
+  .sub b.arr.late { color: var(--hv-warn); }
+  .sub b.arr.bad { color: var(--hv-bad); }
+  .sub b.arr.ok { color: var(--hv-ok); }
   .right { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
   .countdown { font-size: .85rem; color: var(--hv-muted); white-space: nowrap; }
   .countdown b { font-size: 1.05rem; color: var(--primary-text-color); }

@@ -87,13 +87,17 @@ class Departure:
         return self.connection.scheduled_departure + timedelta(seconds=delay)
 
     @property
-    def expected_arrival(self) -> datetime:
+    def arrival_delay_seconds(self) -> int | None:
+        """Delay at the destination, or the current delay when that is not known yet."""
         if self.arrival_realtime:
-            delay = self.arrival_realtime.delay_seconds
-        elif self.departure_realtime:
-            delay = self.departure_realtime.delay_seconds
-        else:
-            delay = 0
+            return self.arrival_realtime.delay_seconds
+        if self.departure_realtime:
+            return self.departure_realtime.delay_seconds
+        return None
+
+    @property
+    def expected_arrival(self) -> datetime:
+        delay = self.arrival_delay_seconds or 0
         return self.connection.scheduled_arrival + timedelta(seconds=delay)
 
     def as_dict(self) -> dict[str, Any]:
@@ -109,6 +113,11 @@ class Departure:
             "delay_min": round(dep.delay_seconds / 60) if dep else None,
             "scheduled_arrival": c.scheduled_arrival.isoformat(),
             "expected_arrival": self.expected_arrival.isoformat(),
+            "arrival_delay_min": (
+                round(self.arrival_delay_seconds / 60)
+                if self.arrival_delay_seconds is not None
+                else None
+            ),
             "platform": dep.platform if dep else None,
             "current_stop": dep.current_stop if dep else None,
             "realtime": self.realtime,
