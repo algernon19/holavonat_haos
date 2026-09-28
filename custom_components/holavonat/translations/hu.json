@@ -1,0 +1,106 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Felelősségkizárás",
+        "description": "Ez nem hivatalos integráció, nem áll kapcsolatban a MÁV-val, a GYSEV-vel vagy a holavonat.is-szel.\n\n- Menetrend: a MÁV hivatalos GTFS menetrendje, a saját MÁV-hozzáféréseddel letöltve.\n- Késés: a holavonat.is nem hivatalos adatfolyama (https://github.com/holavonat/holavonatis), amely egy nem dokumentált API-ra épül.\n\n**Az adatok pontatlanok, hiányosak, késve frissülők lehetnek, és bármikor elérhetetlenné válhatnak. Az integráció készítői nem vállalnak felelősséget az adatokért és azok felhasználásának semmilyen következményéért. Utazás előtt mindig ellenőrizd a hivatalos szolgáltatónál.**",
+        "data": {
+          "accept_disclaimer": "Tudomásul veszem és elfogadom, hogy az adatokat saját felelősségemre használom"
+        }
+      },
+      "source": {
+        "title": "MÁV GTFS menetrend",
+        "description": "A MÁV GTFS menetrend (gtfsMavMenetrend.zip) letöltési linkje és basic auth adatai. A hozzáférést a MÁV-tól lehet igényelni. A menetrend most letöltődik a beállítások ellenőrzéséhez, utána minden nap 01:30-kor.",
+        "data": {
+          "url": "Letöltési link",
+          "username": "Felhasználónév",
+          "password": "Jelszó"
+        },
+        "data_description": {
+          "url": "A MÁV-tól kapott link. Csak a saját Home Assistantodban tárolódik."
+        }
+      },
+      "reconfigure": {
+        "title": "MÁV GTFS menetrend",
+        "description": "A MÁV GTFS menetrend (gtfsMavMenetrend.zip) letöltési linkje és basic auth adatai. A hozzáférést a MÁV-tól lehet igényelni. A menetrend most letöltődik a beállítások ellenőrzéséhez, utána minden nap 01:30-kor.",
+        "data": {
+          "url": "Letöltési link",
+          "username": "Felhasználónév",
+          "password": "Jelszó"
+        },
+        "data_description": {
+          "url": "A MÁV-tól kapott link. Csak a saját Home Assistantodban tárolódik."
+        }
+      },
+      "reauth_confirm": {
+        "title": "A MÁV GTFS hozzáférés elutasítva",
+        "description": "A menetrend letöltését elutasították. Add meg az aktuális linket és hozzáférést.",
+        "data": {
+          "url": "Letöltési link",
+          "username": "Felhasználónév",
+          "password": "Jelszó"
+        },
+        "data_description": {
+          "url": "A MÁV-tól kapott link. Csak a saját Home Assistantodban tárolódik."
+        }
+      }
+    },
+    "error": {
+      "disclaimer_not_accepted": "A folytatáshoz el kell fogadnod a felelősségkizárást.",
+      "invalid_auth": "A letöltési link elutasította a felhasználónevet vagy a jelszót.",
+      "cannot_connect": "Nem sikerült letölteni a menetrendet. Ellenőrizd a linket.",
+      "invalid_gtfs": "A letöltött fájl nem érvényes GTFS zip."
+    },
+    "abort": {
+      "single_instance_allowed": "Csak egy MÁV menetrendforrás állítható be. Állomáspárt az Útvonal hozzáadása gombbal adhatsz hozzá.",
+      "reconfigure_successful": "A beállítások frissültek.",
+      "reauth_successful": "A hozzáférés frissült."
+    }
+  },
+  "config_subentries": {
+    "route": {
+      "initiate_flow": {
+        "user": "Útvonal hozzáadása"
+      },
+      "entry_type": "Útvonal",
+      "step": {
+        "user": {
+          "title": "Állomások",
+          "description": "Írd be a két állomás nevét. A következő lépésben választod ki a pontos állomást. A vonatok mindkét irányban megjelennek.",
+          "data": {
+            "origin_query": "A állomás",
+            "destination_query": "B állomás"
+          }
+        },
+        "select": {
+          "title": "Állomások kiválasztása",
+          "data": {
+            "origin": "A állomás",
+            "destination": "B állomás"
+          }
+        }
+      },
+      "error": {
+        "no_station": "Nincs ilyen nevű állomás a menetrendben.",
+        "same_station": "A két állomás nem lehet ugyanaz."
+      },
+      "abort": {
+        "already_configured": "Ez az állomáspár már be van állítva.",
+        "not_loaded": "A menetrend még nincs betöltve. Próbáld újra, ha az integráció elindult."
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "outbound": {
+        "name": "Oda {number}."
+      },
+      "return": {
+        "name": "Vissza {number}."
+      },
+      "timetable": {
+        "name": "Menetrend frissítve"
+      }
+    }
+  }
+}

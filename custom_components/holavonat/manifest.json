@@ -1,0 +1,15 @@
+{
+  "domain": "holavonat",
+  "name": "Holavonat",
+  "codeowners": [
+    "@algernon19"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/algernon19/holavonat_haos",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/algernon19/holavonat_haos/issues",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "0.3.0"
+}
