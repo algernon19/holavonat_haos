@@ -91,13 +91,43 @@ platform: "6"           # null, ha nincs valós idejű adat
 current_stop: Vác       # hol jár most a vonat
 realtime: true
 replacement_bus: false  # true, ha a MÁV busszal pótolja a járatot
+direction: return       # outbound vagy return
+position: 1             # hányadik vonat az irányban
 ```
+
+Az `origin`, `destination`, `direction` és `position` akkor is ott van, ha nincs következő vonat.
 
 Ezen felül a **MÁV menetrend** eszközön van egy diagnosztikai szenzor (`Menetrend frissítve`), amely a legutóbbi sikeres letöltés idejét mutatja. Attribútumai: `feed_version`, `valid_until`.
 
-## Példa kártyák
+## Dashboard kártya
 
-Egyszerű lista:
+Az integráció saját kártyát hoz magával, külön telepíteni nem kell. A Home Assistant témáját követi (világos és sötét mód).
+
+![Holavonat kártya](docs/card.png)
+
+*A kép mintaadatokkal készült.*
+
+Hozzáadás: dashboard szerkesztése → **Kártya hozzáadása** → **Holavonat**. Vagy YAML-ban:
+
+```yaml
+type: custom:holavonat-card
+title: Ingázás              # nem kötelező
+route: Szeged ⇄ Szatymaz    # nem kötelező, az útvonal neve; nélküle minden útvonal megjelenik
+```
+
+A kártyán látható:
+
+- a várható indulás, késésnél narancssárgával és alatta áthúzva a menetrend szerinti idő,
+- a visszaszámlálás (10 percen belül kiemelve),
+- a vonat neve, a vágány, az érkezés és hogy hol jár most a vonat,
+- a késés színkóddal: zöld pontos, narancs késik, piros 10 percnél többet késik, szürke menetrend szerinti (még nincs élő adat),
+- a pótlóbusz jelölése.
+
+Ha a kártya a frissítés után nem jelenik meg, töltsd újra a böngészőt (a mobilalkalmazásban: Beállítások → Companion app → Gyorsítótár ürítése).
+
+### Beépített kártyával
+
+Ha nem a saját kártyát használod:
 
 ```yaml
 type: entities
@@ -115,29 +145,6 @@ entities:
     format: time
   - entity: sensor.budapest_nyugati_szeged_3
     format: time
-```
-
-Késéssel és vágánnyal:
-
-```yaml
-type: markdown
-content: >
-  {% for dir in ['szeged_budapest_nyugati', 'budapest_nyugati_szeged'] %}
-  **{{ state_attr('sensor.' ~ dir ~ '_1', 'origin') }} → {{ state_attr('sensor.' ~ dir ~ '_1', 'destination') }}**
-
-  {% for i in range(1, 4) %}
-  {% set e = 'sensor.' ~ dir ~ '_' ~ i %}
-  {% if states(e) not in ['unknown', 'unavailable'] %}
-  {{ as_timestamp(state_attr(e, 'scheduled_departure')) | timestamp_custom('%H:%M') }}
-  {{ state_attr(e, 'train') }}
-  {% if state_attr(e, 'delay_min') %}**+{{ state_attr(e, 'delay_min') }} perc**{% endif %}
-  {% if state_attr(e, 'platform') %}· {{ state_attr(e, 'platform') }}. vágány{% endif %}
-
-  {% endif %}
-  {% endfor %}
-  {% endfor %}
-
-  Menetrend: MÁV GTFS · Késés: holavonat.is
 ```
 
 ## Hibakeresés

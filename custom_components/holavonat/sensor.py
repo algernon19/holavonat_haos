@@ -42,11 +42,11 @@ async def async_setup_entry(
             entry_type=DeviceEntryType.SERVICE,
         )
         a, b = subentry.data[CONF_ORIGIN_NAME], subentry.data[CONF_DESTINATION_NAME]
-        labels = {"outbound": f"{a} → {b}", "return": f"{b} → {a}"}
+        stations = {"outbound": (a, b), "return": (b, a)}
         async_add_entities(
             [
                 HolavonatDepartureSensor(
-                    route, device, subentry_id, direction, position, labels[direction]
+                    route, device, subentry_id, direction, position, *stations[direction]
                 )
                 for direction in DIRECTIONS
                 for position in range(DEPARTURE_COUNT)
@@ -71,12 +71,20 @@ class HolavonatDepartureSensor(CoordinatorEntity[RouteCoordinator], SensorEntity
         subentry_id: str,
         direction: str,
         position: int,
-        label: str,
+        origin: str,
+        destination: str,
     ) -> None:
         super().__init__(coordinator)
         self._direction = direction
         self._position = position
-        self._attr_name = f"{label} {position + 1}."
+        self._attr_name = f"{origin} → {destination} {position + 1}."
+        # Always present, so the dashboard card can group sensors without a departure.
+        self._static_attributes = {
+            "origin": origin,
+            "destination": destination,
+            "direction": direction,
+            "position": position + 1,
+        }
         self._attr_unique_id = f"{subentry_id}_{direction}_{position + 1}"
         self._attr_device_info = device
 
@@ -91,9 +99,9 @@ class HolavonatDepartureSensor(CoordinatorEntity[RouteCoordinator], SensorEntity
         return departure.expected_departure if departure else None
 
     @property
-    def extra_state_attributes(self) -> dict[str, Any] | None:
+    def extra_state_attributes(self) -> dict[str, Any]:
         departure = self._departure
-        return departure.as_dict() if departure else None
+        return {**self._static_attributes, **(departure.as_dict() if departure else {})}
 
 
 class HolavonatTimetableSensor(SensorEntity):

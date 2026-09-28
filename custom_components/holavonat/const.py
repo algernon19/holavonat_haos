@@ -5,6 +5,8 @@ from typing import Final
 
 DOMAIN: Final = "holavonat"
 
+CARD_URL: Final = "/holavonat/holavonat-card.js"
+
 REALTIME_URL: Final = "https://cdn.holavonat.is/train_data_v3.json"
 REALTIME_INTERVAL: Final = timedelta(seconds=60)
 ROUTE_INTERVAL: Final = timedelta(seconds=60)
