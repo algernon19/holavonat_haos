@@ -24,6 +24,9 @@ const STRINGS = {
     noRoutes: "Nincs beállított Holavonat útvonal.",
     bus: "Pótlóbusz",
     departed: "elindult",
+    updated: "Frissítve",
+    timetable: "menetrend",
+    live: "élő adat",
   },
   en: {
     now: "departing",
@@ -42,6 +45,9 @@ const STRINGS = {
     noRoutes: "No Holavonat route configured.",
     bus: "Replacement bus",
     departed: "departed",
+    updated: "Updated",
+    timetable: "timetable",
+    live: "live data",
   },
 };
 
@@ -187,6 +193,33 @@ class HolavonatCard extends HTMLElement {
     return `<div class="sub arrival">${t.arrives}: ${t.scheduledShort} <b>${scheduled}</b>${actual}</div>`;
   }
 
+  _status() {
+    for (const [entityId, entry] of Object.entries(this._hass.entities || {})) {
+      if (entry.platform !== "holavonat") continue;
+      const state = this._hass.states[entityId];
+      if (state?.attributes && "feed_version" in state.attributes) return state;
+    }
+    return null;
+  }
+
+  _stamp(iso) {
+    if (!iso) return "–";
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return "–";
+    const lang = this._hass?.locale?.language || "hu";
+    const today = new Date().toDateString() === date.toDateString();
+    return today
+      ? this._time(iso)
+      : date.toLocaleString(lang, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  }
+
+  _updated() {
+    const status = this._status();
+    if (!status) return "";
+    const t = this._t;
+    return `${t.updated}: ${t.timetable} ${this._stamp(status.state)} · ${t.live} ${this._stamp(status.attributes.realtime_updated)} · `;
+  }
+
   _direction(dir) {
     const t = this._t;
     const rows = dir.trains.length
@@ -206,7 +239,11 @@ class HolavonatCard extends HTMLElement {
   _render() {
     if (!this._hass || !this.shadowRoot) return;
     const routes = this._routes();
-    const key = JSON.stringify(routes) + (this._config.title || "");
+    const status = this._status();
+    const key =
+      JSON.stringify(routes) +
+      (this._config.title || "") +
+      (status ? status.state + status.attributes.realtime_updated : "");
     if (key === this._lastKey) return;
     this._lastKey = key;
 
@@ -229,7 +266,7 @@ class HolavonatCard extends HTMLElement {
       <ha-card>
         ${this._config.title ? `<div class="title">${esc(this._config.title)}</div>` : ""}
         ${body}
-        <div class="footer">MÁV GTFS · holavonat.is</div>
+        <div class="footer">${this._updated()}MÁV GTFS · holavonat.is</div>
       </ha-card>`;
   }
 }

@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.util import slugify
+from homeassistant.util import dt as dt_util, slugify
 
 from . import HolavonatConfigEntry
 from .const import (
@@ -21,7 +21,7 @@ from .const import (
     DEPARTURE_COUNT,
     DOMAIN,
 )
-from .coordinator import GtfsManager, RouteCoordinator
+from .coordinator import GtfsManager, RealtimeCoordinator, RouteCoordinator
 from .trains import Departure
 
 DIRECTIONS = ("outbound", "return")
@@ -33,7 +33,7 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     data = entry.runtime_data
-    async_add_entities([HolavonatTimetableSensor(entry, data.gtfs)])
+    async_add_entities([HolavonatTimetableSensor(entry, data.gtfs, data.realtime)])
     for subentry_id, route in data.routes.items():
         subentry = entry.subentries[subentry_id]
         device = DeviceInfo(
@@ -109,7 +109,7 @@ class HolavonatDepartureSensor(CoordinatorEntity[RouteCoordinator], SensorEntity
 
 
 class HolavonatTimetableSensor(SensorEntity):
-    """When the MÁV timetable was last downloaded."""
+    """When the MÁV timetable was last downloaded, and the time of the realtime feed."""
 
     _attr_has_entity_name = True
     _attr_translation_key = "timetable"
@@ -118,8 +118,11 @@ class HolavonatTimetableSensor(SensorEntity):
     _attr_icon = "mdi:calendar-clock"
     _attr_should_poll = False
 
-    def __init__(self, entry: HolavonatConfigEntry, gtfs: GtfsManager) -> None:
+    def __init__(
+        self, entry: HolavonatConfigEntry, gtfs: GtfsManager, realtime: RealtimeCoordinator
+    ) -> None:
         self._gtfs = gtfs
+        self._realtime = realtime
         self._attr_unique_id = f"{entry.entry_id}_timetable"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
@@ -130,6 +133,7 @@ class HolavonatTimetableSensor(SensorEntity):
 
     async def async_added_to_hass(self) -> None:
         self.async_on_remove(self._gtfs.async_add_listener(self._handle_update))
+        self.async_on_remove(self._realtime.async_add_listener(self._handle_update))
 
     @callback
     def _handle_update(self) -> None:
@@ -144,7 +148,10 @@ class HolavonatTimetableSensor(SensorEntity):
         timetable = self._gtfs.timetable
         if timetable is None:
             return None
+        feed_time = dt_util.parse_datetime((self._realtime.data or {}).get("timestamp") or "")
         return {
             "feed_version": timetable.feed_version,
             "valid_until": timetable.feed_end.isoformat() if timetable.feed_end else None,
+            # Generation time of the holavonat.is feed, not of the last poll.
+            "realtime_updated": feed_time.isoformat() if feed_time else None,
         }

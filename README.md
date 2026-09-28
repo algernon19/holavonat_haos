@@ -98,7 +98,7 @@ position: 1             # hányadik vonat az irányban
 
 Az `origin`, `destination`, `direction` és `position` akkor is ott van, ha nincs következő vonat.
 
-Ezen felül a **MÁV menetrend** eszközön van egy diagnosztikai szenzor (`Menetrend frissítve`), amely a legutóbbi sikeres letöltés idejét mutatja. Attribútumai: `feed_version`, `valid_until`.
+Ezen felül a **MÁV menetrend** eszközön van egy diagnosztikai szenzor (`Menetrend frissítve`), amely a legutóbbi sikeres letöltés idejét mutatja. Attribútumai: `feed_version`, `valid_until`, és `realtime_updated`, a holavonat.is adatfolyam időbélyege.
 
 ## Dashboard kártya
 
@@ -123,7 +123,8 @@ A kártyán látható:
 - a vonat neve, a vágány és hogy hol jár most a vonat,
 - az érkezés: menetrend szerinti idő, és ha van élő adat, a valós (várható) érkezés színkóddal,
 - a késés színkóddal: zöld pontos, narancs késik, piros 10 percnél többet késik, szürke menetrend szerinti (még nincs élő adat),
-- a pótlóbusz jelölése.
+- a pótlóbusz jelölése,
+- alul a frissítési idők: mikor töltődött le a menetrend, és mikor készült az élő adat (a holavonat.is adatfolyam saját időbélyege). A mai nap időpontjai csak órával, a korábbiak dátummal jelennek meg.
 
 Ha a kártya a frissítés után nem jelenik meg, töltsd újra a böngészőt (a mobilalkalmazásban: Beállítások → Companion app → Gyorsítótár ürítése).
 
