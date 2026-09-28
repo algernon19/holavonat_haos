@@ -92,12 +92,6 @@
   },
   "entity": {
     "sensor": {
-      "outbound": {
-        "name": "Outbound {number}"
-      },
-      "return": {
-        "name": "Return {number}"
-      },
       "timetable": {
         "name": "Timetable updated"
       }

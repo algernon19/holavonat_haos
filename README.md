@@ -68,14 +68,12 @@ A link vagy a jelszó később az integráció menüjében az **Újrakonfigurál
 
 ## Entitások
 
-Állomáspáronként 6 timestamp szenzor jön létre (a példában magyar nyelvű Home Assistant, `Szeged ⇄ Budapest-Nyugati`):
+Állomáspáronként 6 timestamp szenzor jön létre, a nevükben az iránnyal. Példa `Szeged ⇄ Budapest-Nyugati` párra:
 
-| Entitás | Jelentés |
-|---|---|
-| `sensor.szeged_budapest_nyugati_oda_1` … `_oda_3` | A → B következő 3 vonat várható indulása |
-| `sensor.szeged_budapest_nyugati_vissza_1` … `_vissza_3` | B → A következő 3 vonat várható indulása |
-
-Angol nyelvű Home Assistantban az azonosítók `_outbound_1` és `_return_1` végűek.
+| Név | Entitás | Jelentés |
+|---|---|---|
+| Szeged → Budapest-Nyugati 1. … 3. | `sensor.szeged_budapest_nyugati_1` … `_3` | A következő 3 vonat várható indulása Szegedről |
+| Budapest-Nyugati → Szeged 1. … 3. | `sensor.budapest_nyugati_szeged_1` … `_3` | A következő 3 vonat várható indulása a Nyugatiból |
 
 Az állapot a **várható** indulás: menetrend + késés, ha ismert. Attribútumok:
 
@@ -105,21 +103,17 @@ Egyszerű lista:
 type: entities
 title: Szeged ⇄ Budapest-Nyugati
 entities:
-  - type: section
-    label: Oda
-  - entity: sensor.szeged_budapest_nyugati_oda_1
+  - entity: sensor.szeged_budapest_nyugati_1
     format: time
-  - entity: sensor.szeged_budapest_nyugati_oda_2
+  - entity: sensor.szeged_budapest_nyugati_2
     format: time
-  - entity: sensor.szeged_budapest_nyugati_oda_3
+  - entity: sensor.szeged_budapest_nyugati_3
     format: time
-  - type: section
-    label: Vissza
-  - entity: sensor.szeged_budapest_nyugati_vissza_1
+  - entity: sensor.budapest_nyugati_szeged_1
     format: time
-  - entity: sensor.szeged_budapest_nyugati_vissza_2
+  - entity: sensor.budapest_nyugati_szeged_2
     format: time
-  - entity: sensor.szeged_budapest_nyugati_vissza_3
+  - entity: sensor.budapest_nyugati_szeged_3
     format: time
 ```
 
@@ -128,11 +122,11 @@ Késéssel és vágánnyal:
 ```yaml
 type: markdown
 content: >
-  {% for dir in ['oda', 'vissza'] %}
-  **{{ 'Oda' if dir == 'oda' else 'Vissza' }}**
+  {% for dir in ['szeged_budapest_nyugati', 'budapest_nyugati_szeged'] %}
+  **{{ state_attr('sensor.' ~ dir ~ '_1', 'origin') }} → {{ state_attr('sensor.' ~ dir ~ '_1', 'destination') }}**
 
   {% for i in range(1, 4) %}
-  {% set e = 'sensor.szeged_budapest_nyugati_' ~ dir ~ '_' ~ i %}
+  {% set e = 'sensor.' ~ dir ~ '_' ~ i %}
   {% if states(e) not in ['unknown', 'unavailable'] %}
   {{ as_timestamp(state_attr(e, 'scheduled_departure')) | timestamp_custom('%H:%M') }}
   {{ state_attr(e, 'train') }}

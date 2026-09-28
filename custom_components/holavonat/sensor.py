@@ -13,7 +13,13 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import HolavonatConfigEntry
-from .const import ATTRIBUTION, DEPARTURE_COUNT, DOMAIN
+from .const import (
+    ATTRIBUTION,
+    CONF_DESTINATION_NAME,
+    CONF_ORIGIN_NAME,
+    DEPARTURE_COUNT,
+    DOMAIN,
+)
 from .coordinator import GtfsManager, RouteCoordinator
 from .trains import Departure
 
@@ -35,9 +41,13 @@ async def async_setup_entry(
             manufacturer="MÁV GTFS / holavonat.is",
             entry_type=DeviceEntryType.SERVICE,
         )
+        a, b = subentry.data[CONF_ORIGIN_NAME], subentry.data[CONF_DESTINATION_NAME]
+        labels = {"outbound": f"{a} → {b}", "return": f"{b} → {a}"}
         async_add_entities(
             [
-                HolavonatDepartureSensor(route, device, subentry_id, direction, position)
+                HolavonatDepartureSensor(
+                    route, device, subentry_id, direction, position, labels[direction]
+                )
                 for direction in DIRECTIONS
                 for position in range(DEPARTURE_COUNT)
             ],
@@ -48,7 +58,8 @@ async def async_setup_entry(
 class HolavonatDepartureSensor(CoordinatorEntity[RouteCoordinator], SensorEntity):
     """Expected departure of the n-th next direct train in one direction."""
 
-    _attr_has_entity_name = True
+    # The name holds the direction, e.g. "Szeged → Szatymaz 1.", without the device name.
+    _attr_has_entity_name = False
     _attr_attribution = ATTRIBUTION
     _attr_device_class = SensorDeviceClass.TIMESTAMP
     _attr_icon = "mdi:train"
@@ -60,12 +71,12 @@ class HolavonatDepartureSensor(CoordinatorEntity[RouteCoordinator], SensorEntity
         subentry_id: str,
         direction: str,
         position: int,
+        label: str,
     ) -> None:
         super().__init__(coordinator)
         self._direction = direction
         self._position = position
-        self._attr_translation_key = direction
-        self._attr_translation_placeholders = {"number": str(position + 1)}
+        self._attr_name = f"{label} {position + 1}."
         self._attr_unique_id = f"{subentry_id}_{direction}_{position + 1}"
         self._attr_device_info = device
 
