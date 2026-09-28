@@ -291,7 +291,22 @@ const STYLE = `
   .footer { margin-top: 10px; font-size: .7rem; color: var(--hv-muted); text-align: right; }
 `;
 
-customElements.define("holavonat-card", HolavonatCard);
+// The card module is loaded before the frontend app, and the app then installs a
+// scoped custom element registry that drops earlier definitions. Define again
+// once the app has registered its main element, if the definition is gone.
+function defineCard() {
+  if (!window.customElements.get("holavonat-card")) {
+    window.customElements.define("holavonat-card", class extends HolavonatCard {});
+  }
+}
+defineCard();
+const started = Date.now();
+const waitForApp = setInterval(() => {
+  if (window.customElements.get("home-assistant") || Date.now() - started > 60000) {
+    clearInterval(waitForApp);
+    defineCard();
+  }
+}, 250);
 
 window.customCards = window.customCards || [];
 window.customCards.push({
