@@ -21,13 +21,17 @@ TIMEZONE: Final = "Europe/Budapest"
 DEPARTURE_COUNT: Final = 3
 # Timetable connections considered per direction: the ones in the lookback
 # window plus the upcoming ones, so delayed trains can be reordered.
-CANDIDATE_COUNT: Final = 30
+CANDIDATE_COUNT: Final = 80
 # Trains scheduled this far in the past are still listed when delayed.
 LOOKBACK: Final = timedelta(minutes=90)
+# How far back trains are searched when trains on their way are shown.
+# Covers the longest domestic direct trips.
+EN_ROUTE_LOOKBACK: Final = timedelta(hours=8)
 
 SUBENTRY_ROUTE: Final = "route"
 
 CONF_ACCEPT_DISCLAIMER: Final = "accept_disclaimer"
+CONF_SHOW_EN_ROUTE: Final = "show_en_route"
 CONF_ORIGIN_QUERY: Final = "origin_query"
 CONF_DESTINATION_QUERY: Final = "destination_query"
 CONF_ORIGIN: Final = "origin"

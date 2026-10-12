@@ -27,6 +27,10 @@ const STRINGS = {
     updated: "Frissítve",
     timetable: "menetrend",
     live: "élő adat",
+    enRoute: "Úton",
+    departedAt: "Indult",
+    arriving: "érkezik",
+    arrivingNow: "most érkezik",
   },
   en: {
     now: "departing",
@@ -48,6 +52,10 @@ const STRINGS = {
     updated: "Updated",
     timetable: "timetable",
     live: "live data",
+    enRoute: "On the way",
+    departedAt: "Departed",
+    arriving: "arrives in",
+    arrivingNow: "arriving",
   },
 };
 
@@ -112,7 +120,11 @@ class HolavonatCard extends HTMLElement {
       if (!routes.has(entry.device_id)) routes.set(entry.device_id, { name: routeName, directions: {} });
       const dirs = routes.get(entry.device_id).directions;
       if (!dirs[attrs.direction]) {
-        dirs[attrs.direction] = { origin: attrs.origin, destination: attrs.destination, trains: [] };
+        dirs[attrs.direction] = { origin: attrs.origin, destination: attrs.destination, trains: [], enRoute: [] };
+      }
+      if (attrs.en_route) {
+        dirs[attrs.direction].enRoute = attrs.trains || [];
+        continue;
       }
       if (state.state && !["unknown", "unavailable"].includes(state.state)) {
         dirs[attrs.direction].trains.push({ position: attrs.position, state: state.state, ...attrs });
@@ -181,6 +193,47 @@ class HolavonatCard extends HTMLElement {
       </div>`;
   }
 
+  _enRouteRow(train) {
+    const t = this._t;
+    const d = train.realtime ? train.arrival_delay_min ?? 0 : 0;
+    const late = d > 0;
+    const meta = [
+      `<span class="chip">${train.replacement_bus ? BUS_ICON : TRAIN_ICON}${esc(train.train || "")}</span>`,
+      train.replacement_bus ? `<span class="chip bus">${t.bus}</span>` : "",
+    ].join("");
+    const minutes = Math.round((new Date(train.expected_arrival) - Date.now()) / 60000);
+    const countdown = minutes <= 0
+      ? `<span class="soon">${t.arrivingNow}</span>`
+      : `<span class="${minutes <= 10 ? "soon" : ""}">${t.arriving} <b>${minutes}</b> ${t.min}</span>`;
+    let departed = `${t.departedAt}: ${t.scheduledShort} <b>${this._time(train.scheduled_departure)}</b>`;
+    if (train.realtime && train.delay_min != null) {
+      departed += ` · ${t.actualShort} <b>${this._time(train.expected_departure)}</b>`;
+    }
+    const where = train.realtime && train.current_stop
+      ? `<div class="where">${t.at}: ${esc(train.current_stop)}</div>`
+      : "";
+    const badge = train.realtime
+      ? `<span class="badge ${d >= 10 ? "bad" : d > 0 ? "warn" : "ok"}">${d > 0 ? `+${d} ${t.min}` : t.onTime}</span>`
+      : `<span class="badge muted">${t.noData}</span>`;
+    return `
+      <div class="train enroute">
+        <div class="when">
+          <div class="label">${t.arrives}</div>
+          <div class="time ${late ? "late" : ""}">${this._time(train.expected_arrival)}</div>
+          ${late ? `<div class="sched">${this._time(train.scheduled_arrival)}</div>` : ""}
+        </div>
+        <div class="info">
+          <div class="meta">${meta}</div>
+          <div class="sub arrival">${departed}</div>
+          ${where}
+        </div>
+        <div class="right">
+          <div class="countdown">${countdown}</div>
+          ${badge}
+        </div>
+      </div>`;
+  }
+
   _arrival(train) {
     const t = this._t;
     const scheduled = this._time(train.scheduled_arrival);
@@ -225,6 +278,12 @@ class HolavonatCard extends HTMLElement {
     const rows = dir.trains.length
       ? dir.trains.map((train, i) => this._trainRow(train, i === 0)).join("")
       : `<div class="empty">${t.none}</div>`;
+    const enRoute = (dir.enRoute || []).length
+      ? `<div class="enroute-block">
+          <div class="block-title"><span class="pulse"></span>${t.enRoute}</div>
+          ${dir.enRoute.map((train) => this._enRouteRow(train)).join("")}
+        </div>`
+      : "";
     return `
       <section class="direction">
         <header>
@@ -232,6 +291,7 @@ class HolavonatCard extends HTMLElement {
           <span class="arrow">→</span>
           <span class="to">${esc(dir.destination)}</span>
         </header>
+        ${enRoute}
         ${rows}
       </section>`;
   }
@@ -324,6 +384,18 @@ const STYLE = `
   .badge.warn { color: var(--hv-warn); background: color-mix(in srgb, var(--hv-warn) 15%, transparent); }
   .badge.bad { color: var(--hv-bad); background: color-mix(in srgb, var(--hv-bad) 15%, transparent); }
   .badge.muted { color: var(--hv-muted); background: color-mix(in srgb, var(--hv-muted) 12%, transparent); font-weight: 500; }
+  .enroute-block {
+    margin: 4px -4px 6px; padding: 2px 8px 0; border-radius: 10px;
+    background: color-mix(in srgb, var(--hv-accent) 10%, transparent);
+  }
+  .block-title {
+    display: flex; align-items: center; gap: 6px; padding-top: 6px;
+    font-size: .72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--hv-accent);
+  }
+  .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--hv-accent); animation: hv-pulse 1.6s ease-in-out infinite; }
+  @keyframes hv-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+  .enroute-block .train + .train { border-top: 1px solid var(--hv-line); }
+  .label { font-size: .68rem; text-transform: uppercase; letter-spacing: .05em; color: var(--hv-muted); }
   .empty { color: var(--hv-muted); font-size: .9rem; padding: 12px 0; }
   .footer { margin-top: 10px; font-size: .7rem; color: var(--hv-muted); text-align: right; }
 `;

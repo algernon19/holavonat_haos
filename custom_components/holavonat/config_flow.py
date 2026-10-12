@@ -14,6 +14,7 @@ from homeassistant.config_entries import (
     ConfigFlow,
     ConfigFlowResult,
     ConfigSubentryFlow,
+    OptionsFlow,
     SubentryFlowResult,
 )
 from homeassistant.const import CONF_PASSWORD, CONF_URL, CONF_USERNAME
@@ -39,6 +40,7 @@ from .const import (
     CONF_ORIGIN_ID,
     CONF_ORIGIN_NAME,
     CONF_ORIGIN_QUERY,
+    CONF_SHOW_EN_ROUTE,
     DOMAIN,
     SUBENTRY_ROUTE,
 )
@@ -159,12 +161,36 @@ class HolavonatConfigFlow(ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
+        return HolavonatOptionsFlow()
+
     @classmethod
     @callback
     def async_get_supported_subentry_types(
         cls, config_entry: ConfigEntry
     ) -> dict[str, type[ConfigSubentryFlow]]:
         return {SUBENTRY_ROUTE: RouteSubentryFlow}
+
+
+class HolavonatOptionsFlow(OptionsFlow):
+    """Display options for all routes."""
+
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        if user_input is not None:
+            return self.async_create_entry(data=user_input)
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_SHOW_EN_ROUTE,
+                        default=self.config_entry.options.get(CONF_SHOW_EN_ROUTE, False),
+                    ): BooleanSelector(),
+                }
+            ),
+        )
 
 
 def _stop_selector(stops: list[Stop]) -> SelectSelector:

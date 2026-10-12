@@ -96,5 +96,19 @@
         "name": "Timetable updated"
       }
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Display options",
+        "description": "Settings for every route.",
+        "data": {
+          "show_en_route": "Show trains on their way"
+        },
+        "data_description": {
+          "show_en_route": "Also show trains that already left the departure station but have not arrived yet, e.g. the one you are sitting on. Adds an \"en route\" sensor per direction."
+        }
+      }
+    }
   }
 }

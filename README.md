@@ -64,6 +64,10 @@ Másold a `custom_components/holavonat` mappát a Home Assistant `config/custom_
 
 Minden állomáspár mindkét irányt tartalmazza. Az A→B és B→A pár ugyanannak számít.
 
+### Úton lévő vonatok
+
+Az integráció **Beállítások** (fogaskerék) menüjében kapcsolható be az **Úton lévő vonatok megjelenítése**. Bekapcsolva azok a vonatok is megjelennek, amelyek már elindultak az indulási állomásról, de még nem érkeztek meg, például amelyiken éppen ülsz. Ha van élő adat, a valós indulási és érkezési idő alapján számol, különben menetrend szerint. A beállítás minden útvonalra vonatkozik, kikapcsoláskor a hozzá tartozó szenzorok törlődnek.
+
 A link vagy a jelszó később az integráció menüjében az **Újrakonfigurálás** ponttal módosítható. Ha a MÁV elutasítja a hozzáférést, a Home Assistant értesítést küld, és ott megadhatod az újat.
 
 ## Entitások
@@ -74,6 +78,8 @@ A link vagy a jelszó később az integráció menüjében az **Újrakonfigurál
 |---|---|---|
 | Szeged → Budapest-Nyugati 1. … 3. | `sensor.holavonat_szeged_budapest_nyugati_1` … `_3` | A következő 3 vonat várható indulása Szegedről |
 | Budapest-Nyugati → Szeged 1. … 3. | `sensor.holavonat_budapest_nyugati_szeged_1` … `_3` | A következő 3 vonat várható indulása a Nyugatiból |
+| Szeged → Budapest-Nyugati úton | `sensor.holavonat_szeged_budapest_nyugati_en_route` | Csak bekapcsolt „Úton lévő vonatok” beállításnál. A legutóbb elindult, még úton lévő vonat várható érkezése. A `trains` attribútumban az összes úton lévő vonat, a legutóbb indult elöl. |
+| Budapest-Nyugati → Szeged úton | `sensor.holavonat_budapest_nyugati_szeged_en_route` | Ugyanez visszafelé. |
 
 Az állapot a **várható** indulás: menetrend + késés, ha ismert. Attribútumok:
 
@@ -124,6 +130,7 @@ A kártyán látható:
 - az érkezés: menetrend szerinti idő, és ha van élő adat, a valós (várható) érkezés színkóddal,
 - a késés színkóddal: zöld pontos, narancs késik, piros 10 percnél többet késik, szürke menetrend szerinti (még nincs élő adat),
 - a pótlóbusz jelölése,
+- bekapcsolt „Úton lévő vonatok” beállításnál külön „Úton” blokkban a már elindult vonatok, nagy betűvel a várható érkezéssel és visszaszámlálással,
 - alul a frissítési idők: mikor töltődött le a menetrend, és mikor készült az élő adat (a holavonat.is adatfolyam saját időbélyege). A mai nap időpontjai csak órával, a korábbiak dátummal jelennek meg.
 
 Ha a kártya a frissítés után nem jelenik meg, töltsd újra a böngészőt (a mobilalkalmazásban: Beállítások → Companion app → Gyorsítótár ürítése).

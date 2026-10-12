@@ -125,11 +125,17 @@ class Departure:
         }
 
 
-def upcoming_departures(
+def split_departures(
     connections: list[Connection], index: RealtimeIndex, now: datetime, count: int
-) -> list[Departure]:
-    """Attach realtime data and drop trains that already left, by expected time."""
-    result: list[Departure] = []
+) -> tuple[list[Departure], list[Departure]]:
+    """Attach realtime data and split by expected times.
+
+    Returns the next `count` trains that have not left the origin yet, and the
+    trains that left the origin but have not reached the destination, the most
+    recently departed first.
+    """
+    upcoming: list[Departure] = []
+    en_route: list[Departure] = []
     for c in connections:
         dep = Departure(
             connection=c,
@@ -137,6 +143,9 @@ def upcoming_departures(
             arrival_realtime=index.get((normalize(c.destination), "arr", c.scheduled_arrival)),
         )
         if dep.expected_departure >= now:
-            result.append(dep)
-    result.sort(key=lambda d: d.expected_departure)
-    return result[:count]
+            upcoming.append(dep)
+        elif dep.expected_arrival >= now:
+            en_route.append(dep)
+    upcoming.sort(key=lambda d: d.expected_departure)
+    en_route.sort(key=lambda d: d.expected_departure, reverse=True)
+    return upcoming[:count], en_route

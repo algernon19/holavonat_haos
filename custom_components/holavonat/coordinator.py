@@ -26,7 +26,9 @@ from .const import (
     CONF_DESTINATION_ID,
     CANDIDATE_COUNT,
     CONF_ORIGIN_ID,
+    CONF_SHOW_EN_ROUTE,
     DEPARTURE_COUNT,
+    EN_ROUTE_LOOKBACK,
     DOMAIN,
     GTFS_FILENAME,
     GTFS_RETRY_DELAY,
@@ -40,7 +42,7 @@ from .const import (
     TIMEZONE,
 )
 from .gtfs import REQUIRED_FILES, GtfsError, Timetable, load_timetable
-from .trains import Departure, RealtimeIndex, build_realtime_index, upcoming_departures
+from .trains import Departure, RealtimeIndex, build_realtime_index, split_departures
 
 _LOGGER = logging.getLogger(__name__)
 _DOWNLOAD_TIMEOUT = aiohttp.ClientTimeout(total=300)
@@ -253,7 +255,11 @@ class RealtimeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
 
 class RouteCoordinator(DataUpdateCoordinator[dict[str, list[Departure]]]):
-    """Next departures in both directions of one route, recalculated every minute."""
+    """Next departures in both directions of one route, recalculated every minute.
+
+    Keys: "outbound" and "return" for the next departures, "outbound_en_route" and
+    "return_en_route" for trains on their way when that option is enabled.
+    """
 
     def __init__(
         self,
@@ -274,6 +280,7 @@ class RouteCoordinator(DataUpdateCoordinator[dict[str, list[Departure]]]):
         self._destination = subentry.data[CONF_DESTINATION_ID]
         self._gtfs = gtfs
         self._realtime = realtime
+        self._show_en_route = entry.options.get(CONF_SHOW_EN_ROUTE, False)
 
     def _calculate(self) -> dict[str, list[Departure]]:
         timetable = self._gtfs.timetable
@@ -283,18 +290,22 @@ class RouteCoordinator(DataUpdateCoordinator[dict[str, list[Departure]]]):
             raise UpdateFailed("A configured station is missing from the current timetable")
         now = dt_util.utcnow()
         index = self._realtime.realtime_index()
-        return {
-            direction: upcoming_departures(
-                timetable.connections(origin, destination, now - LOOKBACK, CANDIDATE_COUNT),
+        lookback = EN_ROUTE_LOOKBACK if self._show_en_route else LOOKBACK
+        result: dict[str, list[Departure]] = {}
+        for direction, origin, destination in (
+            ("outbound", self._origin, self._destination),
+            ("return", self._destination, self._origin),
+        ):
+            upcoming, en_route = split_departures(
+                timetable.connections(origin, destination, now - lookback, CANDIDATE_COUNT),
                 index,
                 now,
                 DEPARTURE_COUNT,
             )
-            for direction, origin, destination in (
-                ("outbound", self._origin, self._destination),
-                ("return", self._destination, self._origin),
-            )
-        }
+            result[direction] = upcoming
+            if self._show_en_route:
+                result[f"{direction}_en_route"] = en_route
+        return result
 
     async def _async_update_data(self) -> dict[str, list[Departure]]:
         return self._calculate()

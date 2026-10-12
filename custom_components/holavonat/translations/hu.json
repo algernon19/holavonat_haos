@@ -96,5 +96,19 @@
         "name": "Menetrend frissítve"
       }
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Megjelenítés",
+        "description": "Az összes útvonalra vonatkozó beállítások.",
+        "data": {
+          "show_en_route": "Úton lévő vonatok megjelenítése"
+        },
+        "data_description": {
+          "show_en_route": "Azok a vonatok is látszanak, amelyek már elindultak az indulási állomásról, de még nem érkeztek meg, például amelyiken éppen ülsz. Irányonként egy „úton” szenzort hoz létre."
+        }
+      }
+    }
   }
 }
