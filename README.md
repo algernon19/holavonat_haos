@@ -127,11 +127,12 @@ A kártyán látható:
 
 - a várható indulás, késésnél narancssárgával és alatta áthúzva a menetrend szerinti idő,
 - a visszaszámlálás (10 percen belül kiemelve),
-- a vonat neve, a vágány és hogy hol jár most a vonat,
-- az érkezés: menetrend szerinti idő, és ha van élő adat, a valós (várható) érkezés színkóddal,
+- az időpont alatt a vágány,
+- a vonat neve és hogy hol jár most a vonat,
+- az érkezés: naptár ikonnal a menetrend szerinti, adásjel ikonnal a valós (várható) érkezés, színkóddal,
 - a késés színkóddal: zöld pontos, narancs késik, piros 10 percnél többet késik, szürke menetrend szerinti (még nincs élő adat),
 - a pótlóbusz jelölése,
-- bekapcsolt „Úton lévő vonatok” beállításnál külön „Úton” blokkban a két állomás között járó vonatok, menetvonallal: a vonat a jelenlegi helyén, két végén az indulási és az érkezési idő (késésnél áthúzva a menetrend szerinti), középen hogy hány perc múlva érkezik,
+- bekapcsolt „Úton lévő vonatok” beállításnál a két állomás között járó vonatok felül, kiemelt háttérrel és pulzáló kék ponttal, menetvonallal: a vonat a jelenlegi helyén, két végén az indulási és az érkezési idő (késésnél áthúzva a menetrend szerinti), középen a késés és hogy hány perc múlva érkezik,
 - hol jár a vonat: „Szatymaz felé” (úton a megálló felé) vagy „Szatymaz állomáson” (ott áll),
 - alul a frissítési idők: mikor töltődött le a menetrend, és mikor készült az élő adat (a holavonat.is adatfolyam saját időbélyege). A mai nap időpontjai csak órával, a korábbiak dátummal jelennek meg.
 

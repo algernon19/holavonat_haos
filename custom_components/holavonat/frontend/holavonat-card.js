@@ -16,6 +16,7 @@ const STRINGS = {
     hour: "ó",
     minShort: "p",
     platform: "vágány",
+    platformShort: "vg.",
     at: "Most",
     arrives: "Érkezés",
     scheduledShort: "menetrend",
@@ -42,6 +43,7 @@ const STRINGS = {
     hour: "h",
     minShort: "m",
     platform: "platform",
+    platformShort: "pl.",
     at: "Now",
     arrives: "Arrival",
     scheduledShort: "scheduled",
@@ -61,6 +63,8 @@ const STRINGS = {
   },
 };
 
+const SCHEDULE_ICON = `<svg class="pic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>`;
+const LIVE_ICON = `<svg class="pic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8"/></svg>`;
 const TRAIN_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2C8 2 4 2.5 4 6v9.5A3.5 3.5 0 0 0 7.5 19L6 20.5v.5h2.23l2-2H14l2 2h2v-.5L16.5 19a3.5 3.5 0 0 0 3.5-3.5V6c0-3.5-3.58-4-8-4M7.5 17A1.5 1.5 0 0 1 6 15.5 1.5 1.5 0 0 1 7.5 14 1.5 1.5 0 0 1 9 15.5 1.5 1.5 0 0 1 7.5 17m3.5-7H6V6h5zm2 0V6h5v4zm3.5 7a1.5 1.5 0 0 1-1.5-1.5 1.5 1.5 0 0 1 1.5-1.5 1.5 1.5 0 0 1 1.5 1.5 1.5 1.5 0 0 1-1.5 1.5"/></svg>`;
 const BUS_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18 11H6V6h12M16.5 17a1.5 1.5 0 0 1-1.5-1.5 1.5 1.5 0 0 1 1.5-1.5 1.5 1.5 0 0 1 1.5 1.5 1.5 1.5 0 0 1-1.5 1.5m-9 0A1.5 1.5 0 0 1 6 15.5 1.5 1.5 0 0 1 7.5 14 1.5 1.5 0 0 1 9 15.5 1.5 1.5 0 0 1 7.5 17M4 16c0 .88.39 1.67 1 2.22V20a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1h8v1a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4z"/></svg>`;
 
@@ -171,17 +175,20 @@ class HolavonatCard extends HTMLElement {
     const delayed = train.realtime && (train.delay_min ?? 0) > 0;
     const meta = [
       `<span class="chip">${train.replacement_bus ? BUS_ICON : TRAIN_ICON}${esc(train.train || "")}</span>`,
-      train.platform ? `<span class="chip">${esc(train.platform)}. ${t.platform}</span>` : "",
       train.replacement_bus ? `<span class="chip bus">${t.bus}</span>` : "",
     ].join("");
     const where = train.realtime && train.current_stop
       ? `<div class="where">${this._where(train)}</div>`
       : "";
+    const below = [
+      delayed ? `<s>${this._time(train.scheduled_departure)}</s>` : "",
+      train.platform ? `<span class="plat">${esc(train.platform)}. ${t.platformShort}</span>` : "",
+    ].filter(Boolean).join(" ");
     return `
       <div class="train ${first ? "first" : ""}">
         <div class="when">
           <div class="time ${delayed ? "late" : ""}">${this._time(train.state)}</div>
-          ${delayed ? `<div class="sched">${this._time(train.scheduled_departure)}</div>` : ""}
+          ${below ? `<div class="below">${below}</div>` : ""}
         </div>
         <div class="info">
           <div class="meta">${meta}</div>
@@ -217,10 +224,10 @@ class HolavonatCard extends HTMLElement {
     return `
       <div class="trip">
         <div class="trip-head">
+          <span class="pulse" title="${t.enRoute}"></span>
           <span class="chip">${train.replacement_bus ? BUS_ICON : TRAIN_ICON}${esc(train.train || "")}</span>
           ${train.replacement_bus ? `<span class="chip bus">${t.bus}</span>` : ""}
           ${where}
-          <span class="trip-badge">${badge}</span>
         </div>
         <div class="track" style="--p:${(progress * 100).toFixed(1)}%">
           <span class="dot start"></span>
@@ -230,7 +237,7 @@ class HolavonatCard extends HTMLElement {
         </div>
         <div class="trip-ends">
           <div><div class="stn">${esc(train.origin)}</div>${late(train.scheduled_departure, train.expected_departure || train.scheduled_departure, depDelayed)}</div>
-          <div class="trip-eta">${countdown}</div>
+          <div class="trip-eta"><div>${badge}</div><div>${countdown}</div></div>
           <div class="end"><div class="stn">${esc(train.destination)}</div>${late(train.scheduled_arrival, train.expected_arrival, d > 0)}</div>
         </div>
       </div>`;
@@ -250,9 +257,9 @@ class HolavonatCard extends HTMLElement {
     if (train.realtime && train.arrival_delay_min != null) {
       const d = train.arrival_delay_min;
       const cls = d >= 10 ? "bad" : d > 0 ? "late" : "ok";
-      actual = ` · ${t.actualShort} <b class="arr ${cls}">${this._time(train.expected_arrival)}</b>`;
+      actual = `<span class="pt ${cls}" title="${t.actualShort}">${LIVE_ICON}<b class="arr ${cls}">${this._time(train.expected_arrival)}</b></span>`;
     }
-    return `<div class="sub arrival">${t.arrives}: ${t.scheduledShort} <b>${scheduled}</b>${actual}</div>`;
+    return `<div class="sub arrival">${t.arrives}: <span class="pt" title="${t.scheduledShort}">${SCHEDULE_ICON}<b>${scheduled}</b></span>${actual}</div>`;
   }
 
   _status() {
@@ -289,7 +296,6 @@ class HolavonatCard extends HTMLElement {
       : `<div class="empty">${t.none}</div>`;
     const enRoute = (dir.enRoute || []).length
       ? `<div class="enroute-block">
-          <div class="block-title"><span class="pulse"></span>${t.enRoute}</div>
           ${dir.enRoute.map((train) => this._enRouteRow(train)).join("")}
         </div>`
       : "";
@@ -367,7 +373,14 @@ const STYLE = `
   .time { font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
   .train.first .time { font-size: 1.7rem; }
   .time.late { color: var(--hv-warn); }
-  .sched { font-size: .8rem; color: var(--hv-muted); text-decoration: line-through; font-variant-numeric: tabular-nums; }
+  .below { font-size: .78rem; color: var(--hv-muted); font-variant-numeric: tabular-nums; white-space: nowrap; margin-top: 1px; }
+  .below s { margin-right: 2px; }
+  .plat { font-weight: 600; color: var(--primary-text-color); }
+  .pt { display: inline-flex; align-items: center; gap: 2px; margin-left: 6px; white-space: nowrap; }
+  .pic { width: 13px; height: 13px; flex: none; }
+  .pt.late .pic { color: var(--hv-warn); }
+  .pt.bad .pic { color: var(--hv-bad); }
+  .pt.ok .pic { color: var(--hv-ok); }
   .info { min-width: 0; }
   .meta { display: flex; flex-wrap: wrap; gap: 4px; }
   .chip {
@@ -394,21 +407,16 @@ const STYLE = `
   .badge.bad { color: var(--hv-bad); background: color-mix(in srgb, var(--hv-bad) 15%, transparent); }
   .badge.muted { color: var(--hv-muted); background: color-mix(in srgb, var(--hv-muted) 12%, transparent); font-weight: 500; }
   .enroute-block {
-    margin: 4px -4px 6px; padding: 2px 8px 0; border-radius: 10px;
+    margin: 2px -4px 4px; padding: 0 8px; border-radius: 10px;
     background: color-mix(in srgb, var(--hv-accent) 10%, transparent);
   }
-  .block-title {
-    display: flex; align-items: center; gap: 6px; padding-top: 6px;
-    font-size: .72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--hv-accent);
-  }
-  .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--hv-accent); animation: hv-pulse 1.6s ease-in-out infinite; }
+  .pulse { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--hv-accent); animation: hv-pulse 1.6s ease-in-out infinite; }
   @keyframes hv-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
-  .trip { padding: 10px 0 8px; }
+  .trip { padding: 8px 0 6px; }
   .trip + .trip { border-top: 1px solid var(--hv-line); }
   .trip-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .trip-where { font-size: .8rem; color: var(--hv-muted); }
-  .trip-badge { margin-left: auto; }
-  .track { position: relative; height: 22px; margin: 6px 6px 2px; }
+  .track { position: relative; height: 22px; margin: 4px 6px 0; }
   .track::before {
     content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 0;
     border-top: 2px dashed color-mix(in srgb, var(--hv-accent) 45%, transparent);
@@ -435,7 +443,7 @@ const STYLE = `
   .trip-ends b { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
   .trip-ends b.late { color: var(--hv-warn); }
   .trip-ends s { color: var(--hv-muted); font-size: .8rem; }
-  .trip-eta { text-align: center; color: var(--hv-accent); white-space: nowrap; }
+  .trip-eta { text-align: center; color: var(--hv-accent); white-space: nowrap; display: flex; flex-direction: column; align-items: center; gap: 2px; }
   .trip-eta b { font-size: 1.05rem; }
   .empty { color: var(--hv-muted); font-size: .9rem; padding: 12px 0; }
   .footer { margin-top: 10px; font-size: .7rem; color: var(--hv-muted); text-align: right; }
