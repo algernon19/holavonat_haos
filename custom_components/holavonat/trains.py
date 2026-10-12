@@ -38,6 +38,26 @@ class StopRealtime:
     delay_seconds: int
     platform: str | None
     current_stop: str | None
+    vehicle_id: str | None = None
+    stop_index: int = 0
+    # Where the vehicle is along its stop list: 3.0 stopped at the 4th stop,
+    # 2.5 between the 3rd and the 4th. None when the feed has no position.
+    position: float | None = None
+    # STOPPED_AT or IN_TRANSIT_TO, relative to current_stop.
+    current_status: str | None = None
+
+
+def _position(vehicle: dict[str, Any], names: list[str]) -> float | None:
+    relationship = vehicle.get("stopRelationship") or {}
+    name = (relationship.get("stop") or {}).get("name")
+    if not name or name not in names:
+        return None
+    index = names.index(name)
+    if relationship.get("status") == "STOPPED_AT":
+        return float(index)
+    if relationship.get("status") == "IN_TRANSIT_TO":
+        return index - 0.5
+    return None
 
 
 # Key: (normalized stop name, "dep" | "arr", scheduled time)
@@ -54,17 +74,37 @@ def build_realtime_index(data: dict[str, Any] | None, now: datetime) -> Realtime
             continue
         base = _service_day_start(stoptimes, now)
         current = ((vehicle.get("stopRelationship") or {}).get("stop") or {}).get("name")
-        for st in stoptimes:
+        names = [(st.get("stop") or {}).get("name") or "" for st in stoptimes]
+        position = _position(vehicle, names)
+        vehicle_id = vehicle.get("vehicleId")
+        status = (vehicle.get("stopRelationship") or {}).get("status")
+        for i, st in enumerate(stoptimes):
             stop = st.get("stop") or {}
             name = normalize(stop.get("name") or "")
             platform = stop.get("platformCode") or None
             if st.get("scheduledDeparture") is not None:
                 index[(name, "dep", base + timedelta(seconds=st["scheduledDeparture"]))] = (
-                    StopRealtime(st.get("departureDelay") or 0, platform, current)
+                    StopRealtime(
+                        st.get("departureDelay") or 0,
+                        platform,
+                        current,
+                        vehicle_id,
+                        i,
+                        position,
+                        status,
+                    )
                 )
             if st.get("scheduledArrival") is not None:
                 index[(name, "arr", base + timedelta(seconds=st["scheduledArrival"]))] = (
-                    StopRealtime(st.get("arrivalDelay") or 0, platform, current)
+                    StopRealtime(
+                        st.get("arrivalDelay") or 0,
+                        platform,
+                        current,
+                        vehicle_id,
+                        i,
+                        position,
+                        status,
+                    )
                 )
     return index
 
@@ -120,9 +160,31 @@ class Departure:
             ),
             "platform": dep.platform if dep else None,
             "current_stop": dep.current_stop if dep else None,
+            "current_status": dep.current_status if dep else None,
             "realtime": self.realtime,
             "replacement_bus": c.replacement_bus,
         }
+
+
+def _segment_state(dep: Departure) -> str | None:
+    """Where the vehicle is relative to the origin and destination, from its position.
+
+    "before": has not left the origin, "between": between the two stations,
+    "after": at or past the destination. None when the position is unknown.
+    """
+    origin, destination = dep.departure_realtime, dep.arrival_realtime
+    if (
+        origin is None
+        or destination is None
+        or origin.position is None
+        or origin.vehicle_id != destination.vehicle_id
+    ):
+        return None
+    if origin.position <= origin.stop_index:
+        return "before"
+    if origin.position >= destination.stop_index:
+        return "after"
+    return "between"
 
 
 def split_departures(
@@ -131,8 +193,9 @@ def split_departures(
     """Attach realtime data and split by expected times.
 
     Returns the next `count` trains that have not left the origin yet, and the
-    trains that left the origin but have not reached the destination, the most
-    recently departed first.
+    trains between the origin and the destination, the most recently departed
+    first. With a vehicle position in the realtime feed the position decides,
+    otherwise the expected times.
     """
     upcoming: list[Departure] = []
     en_route: list[Departure] = []
@@ -142,9 +205,16 @@ def split_departures(
             departure_realtime=index.get((normalize(c.origin), "dep", c.scheduled_departure)),
             arrival_realtime=index.get((normalize(c.destination), "arr", c.scheduled_arrival)),
         )
-        if dep.expected_departure >= now:
+        state = _segment_state(dep)
+        if state is None:
+            # No position in the feed: decide by the expected times.
+            if dep.expected_departure >= now:
+                state = "before"
+            elif dep.expected_arrival >= now:
+                state = "between"
+        if state == "before":
             upcoming.append(dep)
-        elif dep.expected_arrival >= now:
+        elif state == "between":
             en_route.append(dep)
     upcoming.sort(key=lambda d: d.expected_departure)
     en_route.sort(key=lambda d: d.expected_departure, reverse=True)

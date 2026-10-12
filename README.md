@@ -66,7 +66,7 @@ Minden állomáspár mindkét irányt tartalmazza. Az A→B és B→A pár ugyan
 
 ### Úton lévő vonatok
 
-Az integráció **Beállítások** (fogaskerék) menüjében kapcsolható be az **Úton lévő vonatok megjelenítése**. Bekapcsolva azok a vonatok is megjelennek, amelyek már elindultak az indulási állomásról, de még nem érkeztek meg, például amelyiken éppen ülsz. Ha van élő adat, a valós indulási és érkezési idő alapján számol, különben menetrend szerint. A beállítás minden útvonalra vonatkozik, kikapcsoláskor a hozzá tartozó szenzorok törlődnek.
+Az integráció **Beállítások** (fogaskerék) menüjében kapcsolható be az **Úton lévő vonatok megjelenítése**. Bekapcsolva azok a vonatok is megjelennek, amelyek a két beállított állomás között járnak, például amelyiken éppen ülsz. Ha a holavonat.is adatfolyamban van a vonat helyzete, az dönt: amíg a vonat az indulási állomáson áll, a következő indulások között marad, és amint a célállomásra beért, kikerül. Helyzet nélkül a várható indulási és érkezési idő alapján számol. A beállítás minden útvonalra vonatkozik, kikapcsoláskor a hozzá tartozó szenzorok törlődnek.
 
 A link vagy a jelszó később az integráció menüjében az **Újrakonfigurálás** ponttal módosítható. Ha a MÁV elutasítja a hozzáférést, a Home Assistant értesítést küld, és ott megadhatod az újat.
 
@@ -96,6 +96,7 @@ expected_arrival: "2026-09-24T19:16:00+02:00"
 arrival_delay_min: 0    # késés érkezéskor; null, ha nincs valós idejű adat
 platform: "6"           # null, ha nincs valós idejű adat
 current_stop: Vác       # hol jár most a vonat
+current_status: IN_TRANSIT_TO  # STOPPED_AT: az állomáson áll, IN_TRANSIT_TO: felé tart
 realtime: true
 replacement_bus: false  # true, ha a MÁV busszal pótolja a járatot
 direction: return       # outbound vagy return
@@ -130,7 +131,8 @@ A kártyán látható:
 - az érkezés: menetrend szerinti idő, és ha van élő adat, a valós (várható) érkezés színkóddal,
 - a késés színkóddal: zöld pontos, narancs késik, piros 10 percnél többet késik, szürke menetrend szerinti (még nincs élő adat),
 - a pótlóbusz jelölése,
-- bekapcsolt „Úton lévő vonatok” beállításnál külön „Úton” blokkban a már elindult vonatok, nagy betűvel a várható érkezéssel és visszaszámlálással,
+- bekapcsolt „Úton lévő vonatok” beállításnál külön „Úton” blokkban a két állomás között járó vonatok, menetvonallal: a vonat a jelenlegi helyén, két végén az indulási és az érkezési idő (késésnél áthúzva a menetrend szerinti), középen hogy hány perc múlva érkezik,
+- hol jár a vonat: „Szatymaz felé” (úton a megálló felé) vagy „Szatymaz állomáson” (ott áll),
 - alul a frissítési idők: mikor töltődött le a menetrend, és mikor készült az élő adat (a holavonat.is adatfolyam saját időbélyege). A mai nap időpontjai csak órával, a korábbiak dátummal jelennek meg.
 
 Ha a kártya a frissítés után nem jelenik meg, töltsd újra a böngészőt (a mobilalkalmazásban: Beállítások → Companion app → Gyorsítótár ürítése).
